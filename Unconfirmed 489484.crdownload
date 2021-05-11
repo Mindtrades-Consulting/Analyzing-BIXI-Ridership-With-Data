@@ -1,0 +1,671 @@
+# All Functions used in main.py
+
+import os.path
+import csv
+from matplotlib import pyplot as plt
+import numpy as np
+import datetime
+import geopandas as gpd
+from shapely.geometry import Point, Polygon
+
+
+# Function to Check whether a file exists in data subdirectory or not.
+# Parameter : String, Name of file : Boolean, Is in source directory or not
+# Return : Boolean, True/False
+def isFile(name, source=False):
+    if source:
+        path = os.getcwd() + "\\" + name
+    else:
+        path = os.getcwd() + "\data\\" + name
+    return os.path.isfile(path)
+
+
+# Function to get the names of stations from "stations.csv", Find the most and least Popular Bike station
+# by comparing data in "OD.csv" and write results on file
+# Parameter : Year
+# Return : None
+def findPopularBikeStation(year):
+    path = os.getcwd() + "\\data\\OD_" + year + ".csv"
+    travels = []
+    with open(path, "r") as csv_file:
+        data = csv.DictReader(csv_file)
+        for row in data:
+            travels.append({
+                "start": row['start_station_code'],
+                "end": row['end_station_code']
+            })
+    path = os.getcwd() + "\\data\\Stations_" + year + ".csv"
+    stations = []
+    with open(path, "r") as csv_file:
+        data = csv.DictReader(csv_file)
+        for row in data:
+            stations.append({
+                "name": row['name'],
+                "code": row['code'],
+            })
+    start_popularity = []
+    end_popularity = []
+    for t in travels:
+        for s in stations:
+            found = False
+            if t.get("start") == s.get("code"):
+                for x in start_popularity:
+                    if x.get("code") == s.get("code"):
+                        x.update({"popularity": x.get("popularity") + 1})
+                        found = True
+                if not found:
+                    start_popularity.append({
+                        "code": s.get("code"),
+                        "popularity": 1
+                    })
+            elif t.get("end") == s.get("code"):
+                for x in end_popularity:
+                    if x.get("code") == s.get("code"):
+                        x.update({"popularity": x.get("popularity") + 1})
+                        found = True
+                if not found:
+                    end_popularity.append({
+                        "code": s.get("code"),
+                        "popularity": 1
+                    })
+
+    path = os.getcwd() + "\\data\\Start Found Stations_" + year + ".csv"
+    with open(path, "w", newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=["code", "popularity"])
+        writer.writeheader()
+        writer.writerows(start_popularity)
+
+    path = os.getcwd() + "\\data\\End Found Stations_" + year + ".csv"
+    with open(path, "w", newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=["code", "popularity"])
+        writer.writeheader()
+        writer.writerows(end_popularity)
+
+
+# Function to get the data of stations from all Found Stations csv files, Find the most and least Popular Dates
+# by comparing data in "OD.csv" and write results on file
+# Parameter : Year
+# Return : None
+def PopularStations(year):
+    path = os.getcwd() + "\\data\\Start Found Stations_" + year + ".csv"
+    start = []
+    with open(path, "r") as csv_file:
+        data = csv.DictReader(csv_file)
+        for row in data:
+            start.append({
+                "code": row['code'],
+                "popularity": row['popularity']
+            })
+    path = os.getcwd() + "\\data\\End Found Stations_" + year + ".csv"
+    end = []
+    with open(path, "r") as csv_file:
+        data = csv.DictReader(csv_file)
+        for row in data:
+            end.append({
+                "code": row['code'],
+                "popularity": row['popularity']
+            })
+    path = os.getcwd() + "\\data\\Stations_" + year + ".csv"
+    station_details = []
+    with open(path, "r") as csv_file:
+        data = csv.DictReader(csv_file)
+        for row in data:
+            station_details.append({
+                "code": row['code'],
+                "name": row['name'],
+                "latitude": row['latitude'],
+                "longitude": row['longitude']
+            })
+    s_max = 0
+    s_max_code = 0
+    s_min = 99999
+    s_min_code = 0
+    for item in start:
+        if int(item["popularity"]) > s_max:
+            s_max = int(item["popularity"])
+            s_max_code = int(item['code'])
+        if int(item["popularity"]) < s_min:
+            s_min = int(item["popularity"])
+            s_min_code = int(item['code'])
+    e_max = 0
+    e_max_code = 0
+    e_min = 9999999
+    e_min_code = 0
+    for item in end:
+        if int(item["popularity"]) > e_max:
+            e_max = int(item["popularity"])
+            e_max_code = int(item['code'])
+        if int(item["popularity"]) < e_min:
+            e_min = int(item["popularity"])
+            e_min_code = int(item['code'])
+
+    rows = []
+    for item in station_details:
+        if int(item['code']) == s_max_code:
+            rows.append({
+                "id": "start station most popular",
+                "code": s_max_code,
+                "name": item['name'],
+                "popularity": s_max,
+                "latitude": item['latitude'],
+                "longitude": item['longitude'],
+            })
+            break
+    for item in station_details:
+        if int(item['code']) == s_min_code:
+            rows.append({
+                "id": "start station least popular",
+                "code": s_min_code,
+                "name": item['name'],
+                "popularity": s_min,
+                "latitude": item['latitude'],
+                "longitude": item['longitude'],
+            })
+            break
+    for item in station_details:
+        if int(item['code']) == e_max_code:
+            rows.append({
+                "id": "end station most popular",
+                "code": e_max_code,
+                "name": item['name'],
+                "popularity": e_max,
+                "latitude": item['latitude'],
+                "longitude": item['longitude'],
+            })
+            break
+    for item in station_details:
+        if int(item['code']) == e_min_code:
+            rows.append({
+                "id": "end station least popular",
+                "code": e_min_code,
+                "name": item['name'],
+                "popularity": e_min,
+                "latitude": item['latitude'],
+                "longitude": item['longitude'],
+            })
+            break
+
+    path = os.getcwd() + "\\data\\Popular Stations_" + year + ".csv"
+    with open(path, "w", newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=["id", "code", "name", "popularity", "latitude", "longitude"])
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+# Function to get the data of found stations and Plot it on Graph
+# Parameter : year
+# Return : None
+def popularStationGraph(year):
+    path = os.getcwd() + "\\data\\Popular Stations_" + year + ".csv"
+    with open(path, "r") as file:
+        data = csv.reader(file, delimiter='\n')
+        for cords in data:
+            line = cords[0].split(",")
+            if line[0] == "id":
+                continue
+            temp = Point(float(line[5]), float(line[4]))
+            if line[0] == "start station most popular":
+                start_most = [temp]
+            elif line[0] == "start station least popular":
+                start_least = [temp]
+            elif line[0] == "end station most popular":
+                end_most = [temp]
+            elif line[0] == "end station least popular":
+                end_least = [temp]
+
+    path = os.getcwd() + "\\data\\QGISExport\\"
+    boundary_map = gpd.read_file(path + "montreal-shapefile.shp")
+    fig, ax = plt.subplots(1, figsize=(15, 10))
+    s_m = gpd.GeoDataFrame(geometry=start_most)
+    s_l = gpd.GeoDataFrame(geometry=start_least)
+    e_m = gpd.GeoDataFrame(geometry=end_most)
+    e_l = gpd.GeoDataFrame(geometry=end_least)
+    boundary_map.plot(ax=ax, color='black', linewidth=0.1)
+    s_m.plot(ax=ax, markersize=5, color='green', marker="*", label="Most Popular Start Station")
+    e_m.plot(ax=ax, markersize=5, color='blue', marker="*", label="Most Popular End Station")
+    e_l.plot(ax=ax, markersize=5, color='orange', marker="*", label="Least Popular End Station")
+    s_l.plot(ax=ax, markersize=5, color='red', marker="*", label="Least Popular Start Station")
+    plt.title('Montreal\nMap', loc='left', fontsize=40)
+    ax.axis('off')
+    name = "Stations Popularity " + year + ".jpg"
+    plt.savefig(name, dpi=1000)
+    plt.show()
+
+
+# Function to get the name of day by the number of day in week
+# Parameter: day = Int = Number of day in the week
+# Return: name = String = Name of day in the week
+def getDay(day):
+    if day == 0:
+        return "Monday"
+    elif day == 1:
+        return "Tuesday"
+    elif day == 2:
+        return "Wednesday"
+    elif day == 3:
+        return "Thursday"
+    elif day == 4:
+        return "Friday"
+    elif day == 5:
+        return "Saturday"
+    elif day == 6:
+        return "Sunday"
+
+
+# Function to open OD.csv and get all the dates, then find the most and least popular dates
+# and save to file
+# Parameter : Year
+# Return : None
+def PopularDates(year):
+    path = os.getcwd() + "\\data\\OD_" + year + ".csv"
+    DATES = []
+    found = []
+    with open(path, "r") as csv_file:
+        data = csv.DictReader(csv_file)
+        for row in data:
+            Date = row['start_date']
+            d = Date.split("-")
+            month = int(d[1])
+            day = int(d[2][:2])
+            Year = int(d[0])
+            day = getDay(datetime.datetime(Year, month, day).weekday())
+            if day not in found:
+                found.append(day)
+                DATES.append({
+                    "day": day,
+                    "popularity": 1
+                })
+            else:
+                for entry in DATES:
+                    if entry["day"] == day:
+                        entry["popularity"] = entry["popularity"] + 1
+                        break
+
+    path = os.getcwd() + "\\data\\Popular Dates_" + year + ".csv"
+    with open(path, "w", newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=["day", "popularity"])
+        writer.writeheader()
+        writer.writerows(DATES)
+
+
+# Function to open OD.csv and get all the dates, then seperate time from there and find the most
+# and least popular dates and save to file
+# Parameter : Year
+# Return : None
+def PopularTimes(year):
+    path = os.getcwd() + "\\data\\OD_" + year + ".csv"
+    TIMES = []
+    found = []
+    with open(path, "r") as csv_file:
+        data = csv.DictReader(csv_file)
+        for row in data:
+            Date = row['start_date']
+            d = Date.split("-")
+            time = d[2][3:5]
+            if time not in found:
+                found.append(time)
+                TIMES.append({
+                    "hour": time,
+                    "popularity": 1
+                })
+            else:
+                for entry in TIMES:
+                    if entry["hour"] == time:
+                        entry["popularity"] = entry["popularity"] + 1
+                        break
+    max = 0
+    min = 99999999
+    for entry in TIMES:
+        if entry["popularity"] > max:
+            max = entry["popularity"]
+            most_popular = {
+                "hour": ("most: " + entry['hour']),
+                "popularity": max
+            }
+        if entry["popularity"] < min:
+            min = entry["popularity"]
+            least_popular = {
+                "hour": ("least: " + entry['hour']),
+                "popularity": min
+            }
+    TIMES.append(most_popular)
+    TIMES.append(least_popular)
+    path = os.getcwd() + "\\data\\Popular Times_" + year + ".csv"
+    with open(path, "w", newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=["hour", "popularity"])
+        writer.writeheader()
+        writer.writerows(TIMES)
+
+
+# Function to get weather data from file, get stations data from file. Compare popularity with
+# Weather analysis of Precipitation, Snow, and Temperature
+# Parameter : Year
+# Return : None
+def WeatherCondition(year):
+    path = os.getcwd() + "\\data\\noaa-daily-weather-data_" + year + ".csv"
+    Data = []
+    with open(path, "r") as csv_file:
+        data = csv.DictReader(csv_file)
+        for row in data:
+            d = row['GHCN_DIN;DATE;PRCP;SNOW;TMAX;TMIN;ELEVATION;NAME;COORD;COUNTRY_CODE'].split(";")
+            date = d[1]
+            perc = d[2]
+            snow = d[3]
+            tmax = d[4]
+            tmin = d[5]
+            Data.append({
+                "date": date,
+                "precipitation": perc,
+                "snow": snow,
+                "temp max": tmax,
+                "temp min": tmin
+            })
+    WeatherData = []
+    found = []
+    popularity = []
+    precipitation = []
+    snow = []
+    temperature = []
+    maxPopularity = 0
+    maxPerc = 0
+    maxSnow = 0
+    maxTemp = 0
+    path = os.getcwd() + "\\data\\OD_" + year + ".csv"
+    with open(path, "r") as csv_file:
+        data = csv.DictReader(csv_file)
+        for row in data:
+            Date = row['start_date'].split()
+            d = Date[0]
+            for dat in Data:
+                if dat['date'] == d:
+                    if dat['date'] not in found:
+                        found.append(dat['date'])
+                        if dat['precipitation'] == "":
+                            preci = 0
+                        else:
+                            preci = float(dat['precipitation'])
+                        if dat['snow'] == "":
+                            sn = 0
+                        else:
+                            sn = float(dat['snow'])
+                        if dat['temp max'] == "":
+                            tm = 0
+                        else:
+                            tm = float(dat['temp max'])
+                        if dat['temp min'] == "":
+                            tmi = 0
+                        else:
+                            tmi = float(dat['temp min'])
+                        WeatherData.append({
+                            "popularity": 1,
+                            "date": dat['date'],
+                            "precipitation": preci,
+                            "snow": sn,
+                            "temp": (tm + tmi)/2
+                        })
+                    else:
+                        for entry in WeatherData:
+                            if entry["date"] == d:
+                                entry["popularity"] = entry["popularity"] + 1
+                                if entry["popularity"] > maxPopularity:
+                                    maxPopularity = entry["popularity"]
+                                if dat['precipitation'] == "":
+                                    pass
+                                elif float(dat['precipitation']) != 0:
+                                    entry["precipitation"] = (entry['precipitation'] + float(dat['precipitation'])) / 2
+                                if dat['snow'] == "":
+                                    pass
+                                elif float(dat['snow']) != 0:
+                                    entry["snow"] = (entry["snow"] + float(dat['snow'])) / 2
+                                if dat['temp max'] == "" or dat['temp min'] == "":
+                                    pass
+                                elif float(dat['temp max']) != 0 or float(dat['temp min']) != 0:
+                                    entry["temp"] = (entry["temp"] + (float(dat['temp max']) + float(dat['temp min']) / 2)) / 2
+                                if entry["precipitation"] > maxPerc:
+                                    maxPerc = entry["precipitation"]
+                                if entry["snow"] > maxSnow:
+                                    maxSnow = entry["snow"]
+                                if entry["temp"] > maxTemp:
+                                    maxTemp = entry["temp"]
+                    break
+    path = os.getcwd() + "\\data\\WeatherData_" + year + ".csv"
+    with open(path, "w") as file:
+        writer = csv.DictWriter(file, fieldnames=["popularity", "date", "precipitation", "snow", "temp"])
+        writer.writeheader()
+        writer.writerows(WeatherData)
+
+    for day in WeatherData:
+        popularity.append(day['popularity'])
+        precipitation.append(day['precipitation'])
+        snow.append(day['snow'])
+        temperature.append(day['temp'])
+
+    # Plotting Popularity Analysis
+    x2 = np.array(range(0, len(WeatherData)))
+    y2 = np.array(popularity)
+    plt.plot(x2, y2, "-o", color='r', markersize=3)
+    plt.title("Popularity Analysis " + year)
+    plt.xlabel("Days of Year")
+    plt.ylabel("Popularity")
+    name = "Popularity Analysis_" + year + ".jpg"
+    plt.savefig(name, dpi=500)
+    plt.show()
+
+    # Plotting Precipitation Analysis
+    x = np.array(range(0, len(WeatherData)))
+    y = np.array(precipitation)
+    plt.plot(x, y, "-o", color='b', markersize=3)
+    plt.title("Precipitation Analysis " + year)
+    plt.xlabel("Days of Year")
+    plt.ylabel("")
+    name = "Precipitation Analysis_" + year + ".jpg"
+    plt.savefig(name, dpi=500)
+    plt.show()
+
+    # Plotting Snow Analysis
+    x = np.array(range(0, len(WeatherData)))
+    y = np.array(snow)
+    plt.plot(x, y, "-o", color='b', markersize=3)
+    plt.title("Snow Analysis " + year)
+    plt.xlabel("Days of Year")
+    plt.ylabel("")
+    name = "Snow Analysis_" + year + ".jpg"
+    plt.savefig(name, dpi=500)
+    plt.show()
+
+    # Plotting Temperature Analysis
+    x = np.array(range(0, len(WeatherData)))
+    y = np.array(temperature)
+    plt.plot(x, y, "-o", color='b', markersize=3)
+    plt.title("Temperature Analysis " + year)
+    plt.xlabel("Days of Year")
+    plt.ylabel("")
+    name = "Temperature Analysis_" + year + ".jpg"
+    plt.savefig(name, dpi=500)
+    plt.show()
+
+
+# Function to get all dates from OD.csv and compare them with the Holiday Dates and find popularity
+# Write on file
+# Parameter : Year
+# Return : None
+def HolidayPopularity(year):
+    Popularity = {
+        "new_year": 0,
+        "christmas": 0,
+        "saint_JB_day": 0,
+        "canada_day": 0,
+        "good_friday": 0,
+        "easter_monday": 0,
+        "victoria_day": 0,
+        "labour_day": 0,
+        "thanksgiving": 0
+    }
+    new_year = year + "-01-01"
+    christmas = year + "-12-25"
+    saint_JB_day = year + "-06-24"
+    canada_day = year + "-07-01"
+    if year == "2016":
+        good_friday = "2016-03-25"
+        easter_monday = "2016-03-28"
+        victoria_day = "2016-05-23"
+        labour_day = "2016-09-05"
+        thanksgiving = "2016-10-10"
+    elif year == "2017":
+        good_friday = "2017-04-14"
+        easter_monday = "2017-04-17"
+        victoria_day = "2017-05-22"
+        labour_day = "2017-09-04"
+        thanksgiving = "2017-10-09"
+    path = os.getcwd() + "\\data\\OD_" + year + ".csv"
+    with open(path, "r") as csv_file:
+        data = csv.DictReader(csv_file)
+        for row in data:
+            date = row['start_date'].split()
+            d = date[0]
+            if d == new_year:
+                Popularity['new_year'] = Popularity['new_year'] + 1
+            elif d == christmas:
+                Popularity['christmas'] = Popularity['christmas'] + 1
+            elif d == saint_JB_day:
+                Popularity['saint_JB_day'] = Popularity['saint_JB_day'] + 1
+            elif d == canada_day:
+                Popularity['canada_day'] = Popularity['canada_day'] + 1
+            elif d == good_friday:
+                Popularity['good_friday'] = Popularity['good_friday'] + 1
+            elif d == easter_monday:
+                Popularity['easter_monday'] = Popularity['easter_monday'] + 1
+            elif d == victoria_day:
+                Popularity['victoria_day'] = Popularity['victoria_day'] + 1
+            elif d == labour_day:
+                Popularity['labour_day'] = Popularity['labour_day'] + 1
+            elif d == thanksgiving:
+                Popularity['thanksgiving'] = Popularity['thanksgiving'] + 1
+
+    path = os.getcwd() + "\\data\\Holiday Popularity_" + year + ".csv"
+    with open(path, "w", newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=["holiday", "date", "popularity"])
+        writer.writeheader()
+        line = [{"holiday": "new_year", "date": new_year, "popularity": Popularity['new_year']}]
+        writer.writerows(line)
+        line = [{"holiday": "christmas", "date": christmas, "popularity": Popularity['christmas']}]
+        writer.writerows(line)
+        line = [{"holiday": "saint_JB_day", "date": saint_JB_day, "popularity": Popularity['saint_JB_day']}]
+        writer.writerows(line)
+        line = [{"holiday": "canada_day", "date": canada_day, "popularity": Popularity['canada_day']}]
+        writer.writerows(line)
+        line = [{"holiday": "good_friday", "date": good_friday, "popularity": Popularity['good_friday']}]
+        writer.writerows(line)
+        line = [{"holiday": "easter_monday", "date": easter_monday, "popularity": Popularity['easter_monday']}]
+        writer.writerows(line)
+        line = [{"holiday": "victoria_day", "date": victoria_day, "popularity": Popularity['victoria_day']}]
+        writer.writerows(line)
+        line = [{"holiday": "labour_day", "date": labour_day, "popularity": Popularity['labour_day']}]
+        writer.writerows(line)
+        line = [{"holiday": "thanksgiving", "date": thanksgiving, "popularity": Popularity['thanksgiving']}]
+        writer.writerows(line)
+
+
+# Function to get get all data from OD.csv and check for those who are members and those who are not
+# Then display percentage of members and non-members compared to total
+# Parameter : Year
+# Return : None
+def MemberDifference(year):
+    path = os.getcwd() + "\\data\\OD_" + year + ".csv"
+    members = 0
+    not_members = 0
+    with open(path, "r") as csv_file:
+        data = csv.DictReader(csv_file)
+        for row in data:
+            if row['is_member'] == "1":
+                members += 1
+            elif row['is_member'] == "0":
+                not_members += 1
+    total = members + not_members
+    print("members : ", int((members/total)*100))
+    print("not members : ", int((not_members/total)*100))
+
+
+# Function to get daily data from file, check popularity of each station on that day and store its exhaust rate
+# At the end take an average of exhaust rates throughout the year and find fastest and lowest ones
+# Parameter : Year
+# Return : None
+def StationExhaustRate(year):
+    path = os.getcwd() + "\\data\\OD_" + year + ".csv"
+    DATA = []
+    with open(path, "r") as csv_file:
+        data = csv.DictReader(csv_file)
+        for row in data:
+            date = row['start_date'].split()
+            start = row['start_station_code']
+            end = row['end_station_code']
+            DATA.append({
+                "date": date[0],
+                "start_code": start,
+                "end_code": end
+            })
+
+    date = DATA[0]['date']
+    start_popularity = [{
+        "start_code": "",
+        "start_popularity": 0
+    }]
+    end_popularity = [{
+        "end_code": "",
+        "end_popularity": 0
+    }]
+    found = False
+    for entry in DATA:
+        if entry['date'] == date:
+            for item in start_popularity:
+                if item['start_code'] == entry['start_code']:
+                    item['start_popularity'] += 1
+                    found = True
+                    break
+            if not found:
+                start_popularity.append({
+                    "start_code": entry['start_code'],
+                    "start_popularity": 1
+                })
+            found = False
+            for item in end_popularity:
+                if item['end_code'] == entry['end_code']:
+                    item['end_popularity'] += 1
+                    found = True
+                    break
+            if not found:
+                end_popularity.append({
+                    "end_code": entry['end_code'],
+                    "end_popularity": 1
+                })
+            found = False
+        else:
+            date = entry['date']
+
+    Popularity = []
+    for s in start_popularity:
+        for e in end_popularity:
+            if s['start_code'] == "" or e['end_code'] == "":
+                continue
+            if s['start_code'] == e['end_code']:
+                # if s['start_popularity'] == 0:
+                #   s['start_popularity'] = 1
+                # if e['end_popularity'] == 0:
+                #    e['end_popularity'] = 1
+                Popularity.append({
+                    "station": s['start_code'],
+                    "rate": float(s['start_popularity']) / float(e['end_popularity'])
+                })
+
+    path = os.getcwd() + "\\data\\Exhaust Rate_" + year + ".csv"
+    with open(path, "w", newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=["station", "rate"])
+        writer.writeheader()
+        Data = sorted(Popularity, key=lambda i: i['rate'], reverse=True)
+        writer.writerows(Data)
+
+
+
+
+
+
