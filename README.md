@@ -4,10 +4,15 @@ If you live or work in the city, you’ve probably passed by one of the 700 BIXI
 The datasets we will be using in this analysis are. 
 
 [OD_2016.csv]	
+#
 [OD_2017.csv]	
+#
 [Stations_2016.csv]
+#
 [Stations_2017.csv]
+#
 [noaa-daily-weather-data_2016.csv]
+#
 [noaa-daily-weather-data_2017.csv]
 
 Each dataset of OD.csv has 4 Million records of BIXI ridership details. 
