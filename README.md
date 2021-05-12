@@ -27,7 +27,7 @@ Are there any holidays apart from the week ends when the bike ridership is popul
 Any difference in any of the above between members and non members less
 # Data Analysis
 We will analyze all the entries and calculate the varioyus aspects of bike renting. 
-# Sumamry
+# Summary
 BIXI ridership has been in market for over a decade and continues to provide people with rental services. This article can be helpful in improving their services like, stationing more bikes on popular stations, creating new stations on hotspots, creating special offers on popular days and holidays, having backup bikes for stations who exhaust fastest, using weather to an advantage, try to have the station full of bikes at start of an active hour, and the list goes on.
 # How Can MindTrades help?
 MindTrades Consulting Services, a leading marketing agency provides in-depth analysis and insights for the global IT sector including leading data integration brands such as Diyotta. From Cloud Migration, Big Data, Digital Transformation, Agile Deliver, Cyber Security, to Analytics- Mind trades provides published breakthrough ideas, and prompt content delivery. For more information, check [mindtrades.com].
